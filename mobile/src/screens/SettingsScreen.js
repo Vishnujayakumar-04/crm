@@ -5,7 +5,8 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  Alert
+  Alert,
+  Image
 } from 'react-native'
 import { logoutMobile } from '../firebaseConfig'
 
@@ -34,7 +35,11 @@ export default function SettingsScreen({ user, portfolio, onForceSync, onLogout 
       <View style={styles.card}>
         <View style={styles.avatarRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{(displayName || 'IN').slice(0, 2).toUpperCase()}</Text>
+            {portfolio?.profile?.avatar ? (
+              <Image source={{ uri: portfolio.profile.avatar }} style={styles.avatarImg} />
+            ) : (
+              <Text style={styles.avatarText}>{(displayName || 'VJ').slice(0, 2).toUpperCase()}</Text>
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.displayName}>{displayName}</Text>
@@ -133,7 +138,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f97316',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14
+    marginRight: 14,
+    overflow: 'hidden'
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%'
   },
   avatarText: {
     fontSize: 18,

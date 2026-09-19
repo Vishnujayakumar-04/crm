@@ -60,7 +60,9 @@ import {
   logoutUser,
   isFirebaseConfigured,
   savePortfolioToFirestore,
-  loadPortfolioFromFirestore
+  loadPortfolioFromFirestore,
+  loadUserProfileFromFirestore,
+  saveUserProfileToFirestore
 } from './utils/firebase'
 
 const navItems = [
@@ -109,7 +111,23 @@ export default function App() {
         }
         setData(localPortfolio)
 
-        // 2. Asynchronously sync with Firestore cloud storage
+        // 2. Fetch extended profile (avatar, phone, gender, dob) from Firestore
+        try {
+          const cloudProfile = await loadUserProfileFromFirestore(user.uid)
+          if (cloudProfile) {
+            localPortfolio.profile = {
+              ...(localPortfolio.profile || {}),
+              name: cloudProfile.displayName || user.displayName || localPortfolio.profile?.name || 'Vishnu J',
+              phone: cloudProfile.phone || localPortfolio.profile?.phone || '',
+              gender: cloudProfile.gender || localPortfolio.profile?.gender || 'Male',
+              dob: cloudProfile.dob || localPortfolio.profile?.dob || '',
+              avatar: cloudProfile.avatar || localPortfolio.profile?.avatar || ''
+            }
+            setData({ ...localPortfolio })
+          }
+        } catch {}
+
+        // 3. Asynchronously sync with Firestore cloud storage
         try {
           const cloudData = await loadPortfolioFromFirestore(user.uid)
           if (cloudData && (cloudData.holdings?.length > 0 || cloudData.savings?.length > 0)) {
@@ -263,10 +281,16 @@ export default function App() {
   }
 
   function handleUpdateProfile(newProfile) {
-    setData((curr) => ({
-      ...curr,
-      profile: { ...(curr.profile || {}), ...newProfile }
-    }))
+    setData((curr) => {
+      const updatedProfile = { ...(curr.profile || {}), ...newProfile }
+      if (currentUser?.uid) {
+        saveUserProfileToFirestore(currentUser.uid, updatedProfile)
+      }
+      return {
+        ...curr,
+        profile: updatedProfile
+      }
+    })
   }
 
   async function handleLogout() {
@@ -390,8 +414,12 @@ export default function App() {
             onClick={() => setTab('settings')}
             className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-gray-900 to-gray-700 font-heading font-bold text-xs text-white">
-              {userInitials}
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-gray-900 to-gray-700 font-heading font-bold text-xs text-white overflow-hidden">
+              {data.profile?.avatar ? (
+                <img src={data.profile.avatar} alt={userName} className="h-full w-full object-cover" />
+              ) : (
+                userInitials
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-heading font-bold text-xs text-gray-900 dark:text-white truncate">
@@ -492,8 +520,12 @@ export default function App() {
               onClick={() => setTab('settings')}
               className="hidden md:flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-gray-800 cursor-pointer"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-gray-900 to-gray-700 font-heading font-bold text-xs text-white">
-                {userInitials}
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-gray-900 to-gray-700 font-heading font-bold text-xs text-white overflow-hidden">
+                {data.profile?.avatar ? (
+                  <img src={data.profile.avatar} alt={userName} className="h-full w-full object-cover" />
+                ) : (
+                  userInitials
+                )}
               </div>
             </div>
           </div>

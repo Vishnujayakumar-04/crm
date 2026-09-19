@@ -12,6 +12,7 @@ export const initialProfile = {
   phone: '',
   gender: '',
   dob: '',
+  avatar: '',
   currency: 'INR',
   tagline: 'Private Wealth Tracker'
 }

@@ -148,6 +148,7 @@ export async function registerWithEmail(email, password, fullName, profileDetail
         phone: profileDetails.phone?.trim() || '',
         gender: profileDetails.gender || '',
         dob: profileDetails.dob || '',
+        avatar: profileDetails.avatar || '',
         createdAt: serverTimestamp()
       }, { merge: true })
     } catch (err) {
@@ -264,7 +265,8 @@ export async function loadUserProfileFromFirestore(userId) {
         email: data.email || '',
         phone: data.phone || '',
         gender: data.gender || '',
-        dob: data.dob || ''
+        dob: data.dob || '',
+        avatar: data.avatar || ''
       }
     }
     return null

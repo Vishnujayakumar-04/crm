@@ -5,7 +5,8 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  RefreshControl
+  RefreshControl,
+  Image
 } from 'react-native'
 import { fmtINR, fmtPercent, computePortfolioSummary } from '../utils/calculations'
 
@@ -47,9 +48,13 @@ export default function DashboardScreen({
           <Text style={styles.userNameText}>{userName}</Text>
         </View>
         <View style={styles.userAvatar}>
-          <Text style={styles.avatarText}>
-            {(userName || 'IN').slice(0, 2).toUpperCase()}
-          </Text>
+          {portfolio?.profile?.avatar ? (
+            <Image source={{ uri: portfolio.profile.avatar }} style={styles.avatarImg} />
+          ) : (
+            <Text style={styles.avatarText}>
+              {(userName || 'VJ').slice(0, 2).toUpperCase()}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -254,6 +259,11 @@ const styles = StyleSheet.create({
     color: '#f97316',
     fontWeight: '800',
     fontSize: 15
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 14
   },
   netWorthCard: {
     backgroundColor: '#181b22',

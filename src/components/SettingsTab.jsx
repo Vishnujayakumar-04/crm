@@ -12,7 +12,8 @@ import {
   FileSpreadsheet,
   LogOut,
   Mail,
-  Send
+  Send,
+  Camera
 } from 'lucide-react'
 import {
   exportDataAsJSON,
@@ -26,6 +27,7 @@ export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLog
   const [phone, setPhone] = useState(data.profile?.phone || '')
   const [gender, setGender] = useState(data.profile?.gender || 'Male')
   const [dob, setDob] = useState(data.profile?.dob || '')
+  const [avatar, setAvatar] = useState(data.profile?.avatar || '')
   const [profileSaved, setProfileSaved] = useState(false)
 
   // Password reset email state
@@ -37,13 +39,37 @@ export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLog
   const [importError, setImportError] = useState('')
   const [importSuccess, setImportSuccess] = useState('')
 
+  function handleAvatarChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const size = 180
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+        const minDim = Math.min(img.width, img.height)
+        const sx = (img.width - minDim) / 2
+        const sy = (img.height - minDim) / 2
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size)
+        setAvatar(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  }
+
   function handleSaveProfile(e) {
     e.preventDefault()
     onUpdateProfile({
       name: name.trim() || 'Vishnu J',
       phone: phone.trim(),
       gender,
-      dob
+      dob,
+      avatar
     })
     setProfileSaved(true)
     setTimeout(() => setProfileSaved(false), 3000)
@@ -161,6 +187,57 @@ export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLog
         </div>
 
         <form onSubmit={handleSaveProfile} className="space-y-4 max-w-lg">
+          {/* Avatar Upload */}
+          <div className="flex items-center gap-4 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 mb-4">
+            <div className="relative">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 p-0.5 shadow-md shadow-orange-500/20">
+                <div className="h-full w-full rounded-2xl bg-white dark:bg-[#181b22] flex items-center justify-center overflow-hidden">
+                  {avatar ? (
+                    <img src={avatar} alt="Profile" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="font-heading font-extrabold text-lg text-orange-500">
+                      {(name || 'V').slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <label
+                htmlFor="settings-avatar"
+                className="absolute -bottom-1 -right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-orange-500 text-white shadow hover:bg-orange-600 transition-colors"
+                title="Change profile picture"
+              >
+                <Camera size={12} />
+                <input
+                  id="settings-avatar"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+              </label>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <label htmlFor="settings-avatar" className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer">
+                  {avatar ? 'Change photo' : 'Upload photo'}
+                </label>
+                {avatar && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatar('')}
+                    className="text-xs text-red-500 hover:text-red-600 font-semibold ml-2"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                Will be displayed across desktop &amp; mobile dashboards.
+              </p>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
               Display Name

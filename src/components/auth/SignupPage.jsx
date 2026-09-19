@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Lock, Mail, User, ArrowRight, Loader2, AlertCircle, CheckCircle2, ShieldCheck, Check, X, Phone, Calendar } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, User, ArrowRight, Loader2, AlertCircle, CheckCircle2, ShieldCheck, Check, X, Phone, Calendar, Camera } from 'lucide-react'
 import { registerWithEmail, formatAuthError, isFirebaseConfigured } from '../../utils/firebase'
 import FirebaseConfigAlert from './FirebaseConfigAlert'
 
@@ -9,6 +9,7 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
   const [phone, setPhone] = useState('')
   const [gender, setGender] = useState('Male')
   const [dob, setDob] = useState('')
+  const [avatar, setAvatar] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -22,6 +23,33 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
 
   const hasMinLength = password.length >= 6
   const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword
+
+  function handleAvatarChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Profile picture must be under 5MB.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const size = 180
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+        const minDim = Math.min(img.width, img.height)
+        const sx = (img.width - minDim) / 2
+        const sy = (img.height - minDim) / 2
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size)
+        setAvatar(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -61,7 +89,8 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
       const user = await registerWithEmail(email, password, fullName, {
         phone: phone.trim(),
         gender,
-        dob
+        dob,
+        avatar
       })
       setSuccessInfo({
         email: user.email,
@@ -116,6 +145,57 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
             <span>{error}</span>
           </div>
         )}
+
+        {/* Profile Picture Uploader */}
+        <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+          <div className="relative">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 p-0.5 shadow-md shadow-orange-500/20">
+              <div className="h-full w-full rounded-2xl bg-white dark:bg-[#181b22] flex items-center justify-center overflow-hidden">
+                {avatar ? (
+                  <img src={avatar} alt="Profile preview" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="font-heading font-extrabold text-base text-orange-500">
+                    {(fullName || 'V').slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+            </div>
+            <label
+              htmlFor="signup-avatar"
+              className="absolute -bottom-1 -right-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-orange-500 text-white shadow hover:bg-orange-600 transition-colors"
+              title="Upload profile picture"
+            >
+              <Camera size={11} />
+              <input
+                id="signup-avatar"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </label>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <label htmlFor="signup-avatar" className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer">
+                {avatar ? 'Change photo' : 'Add profile picture'}
+              </label>
+              {avatar && (
+                <button
+                  type="button"
+                  onClick={() => setAvatar('')}
+                  className="text-[11px] text-red-500 hover:text-red-600 font-semibold ml-1"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+              JPG, PNG or WEBP (optional)
+            </p>
+          </div>
+        </div>
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
