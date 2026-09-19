@@ -218,7 +218,7 @@ export default function App() {
         {currentTab === 'Allocation' && (
           <AllocationScreen portfolio={portfolio} />
         )}
-        {currentTab === 'Settings' && (
+        {(currentTab === 'Profile' || currentTab === 'Settings') && (
           <SettingsScreen
             user={user}
             portfolio={portfolio}
@@ -235,9 +235,9 @@ export default function App() {
           { id: 'Holdings', label: 'Holdings', icon: '📈' },
           { id: 'Savings', label: 'Savings', icon: '🏦' },
           { id: 'Allocation', label: 'Allocation', icon: '🥧' },
-          { id: 'Settings', label: 'Settings', icon: '⚙️' }
+          { id: 'Profile', label: 'Profile', icon: '👤' }
         ].map((tab) => {
-          const isActive = currentTab === tab.id
+          const isActive = currentTab === tab.id || (tab.id === 'Profile' && currentTab === 'Settings')
           return (
             <TouchableOpacity
               key={tab.id}

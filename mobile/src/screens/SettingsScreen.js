@@ -14,6 +14,9 @@ export default function SettingsScreen({ user, portfolio, onForceSync, onLogout 
   const email = user?.email || 'N/A'
   const displayName = user?.displayName || portfolio?.profile?.name || 'Investor'
   const uid = user?.uid || 'Local'
+  const phone = portfolio?.profile?.phone || ''
+  const gender = portfolio?.profile?.gender || ''
+  const dob = portfolio?.profile?.dob || ''
 
   async function handleLogoutPress() {
     try {
@@ -27,8 +30,8 @@ export default function SettingsScreen({ user, portfolio, onForceSync, onLogout 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings &amp; Profile</Text>
-        <Text style={styles.headerSub}>Manage security and account sync</Text>
+        <Text style={styles.headerTitle}>User Profile</Text>
+        <Text style={styles.headerSub}>Manage your profile details and cloud sync</Text>
       </View>
 
       {/* Profile Card */}
@@ -46,6 +49,26 @@ export default function SettingsScreen({ user, portfolio, onForceSync, onLogout 
             <Text style={styles.emailText}>{email}</Text>
           </View>
         </View>
+
+        {(phone || gender || dob) ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
+            {phone ? (
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11 }}>📞 {phone}</Text>
+              </View>
+            ) : null}
+            {gender ? (
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11 }}>👤 {gender}</Text>
+              </View>
+            ) : null}
+            {dob ? (
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11 }}>🎂 {dob}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       {/* Cloud Sync Status */}

@@ -17,6 +17,7 @@ import {
   PieChart as PieIcon,
   TrendingUp,
   Settings,
+  User,
   Sun,
   Moon,
   LockKeyhole,
@@ -42,7 +43,7 @@ import HoldingsTab from './components/HoldingsTab'
 import SavingsTab from './components/SavingsTab'
 import AllocationTab from './components/AllocationTab'
 import ReportsTab from './components/ReportsTab'
-import SettingsTab from './components/SettingsTab'
+import ProfileTab from './components/ProfileTab'
 import HoldingModal from './components/HoldingModal'
 import SavingsModal from './components/SavingsModal'
 import {
@@ -71,7 +72,7 @@ const navItems = [
   { id: 'savings', label: 'Savings & FDs', icon: Landmark },
   { id: 'allocation', label: 'Allocation', icon: PieIcon },
   { id: 'reports', label: 'Reports', icon: TrendingUp },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'profile', label: 'Profile', icon: User },
 ]
 
 function initialTheme() {
@@ -411,7 +412,7 @@ export default function App() {
 
           {/* User Profile Mini Bar */}
           <div
-            onClick={() => setTab('settings')}
+            onClick={() => setTab('profile')}
             className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-gray-900 to-gray-700 font-heading font-bold text-xs text-white overflow-hidden">
@@ -517,7 +518,7 @@ export default function App() {
 
             {/* Desktop User Avatar */}
             <div
-              onClick={() => setTab('settings')}
+              onClick={() => setTab('profile')}
               className="hidden md:flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-gray-800 cursor-pointer"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-gray-900 to-gray-700 font-heading font-bold text-xs text-white overflow-hidden">
@@ -583,13 +584,15 @@ export default function App() {
             />
           )}
 
-          {tab === 'settings' && (
-            <SettingsTab
+          {(tab === 'profile' || tab === 'settings') && (
+            <ProfileTab
               data={data}
               onUpdateData={setData}
               onUpdateProfile={handleUpdateProfile}
               onLogout={handleLogout}
               currentUser={currentUser}
+              theme={theme}
+              onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             />
           )}
         </main>
@@ -613,11 +616,11 @@ export default function App() {
           )
         })}
         <button
-          onClick={() => setTab('settings')}
-          className={`mobile-nav-item ${tab === 'settings' ? 'active' : ''}`}
+          onClick={() => setTab('profile')}
+          className={`mobile-nav-item ${tab === 'profile' || tab === 'settings' ? 'active' : ''}`}
         >
-          <Settings size={19} />
-          <span>Settings</span>
+          <User size={19} />
+          <span>Profile</span>
         </button>
       </nav>
 
