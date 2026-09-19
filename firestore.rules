@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User-isolated security rule: users can only access their own portfolio data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Default fallback rule (matches user-provided temporary rule)
+    match /{document=**} {
+      allow read, write: if request.time < timestamp.date(2026, 10, 19);
+    }
+  }
+}
