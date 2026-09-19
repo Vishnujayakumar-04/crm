@@ -163,7 +163,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               <Text style={styles.label}>FULL NAME</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Alex Sharma"
+                placeholder="e.g. Vishnu J"
                 placeholderTextColor="#64748b"
                 value={fullName}
                 onChangeText={setFullName}

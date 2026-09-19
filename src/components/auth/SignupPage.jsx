@@ -113,7 +113,7 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
               required
               autoFocus
               className="crm-input pl-11 text-sm font-medium"
-              placeholder="e.g. Alex Sharma"
+              placeholder="e.g. Vishnu J"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />

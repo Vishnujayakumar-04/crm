@@ -163,7 +163,7 @@ export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLog
               className="crm-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alex"
+              placeholder="e.g. Vishnu J"
             />
           </div>
 
