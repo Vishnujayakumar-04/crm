@@ -225,7 +225,10 @@ h1, h2, h3, h4, h5, h6, strong, .font-heading {
 /* Input Fields */
 .crm-input {
   width: 100%;
-  padding: 0.6875rem 0.9375rem;
+  padding-top: 0.6875rem;
+  padding-bottom: 0.6875rem;
+  padding-left: 0.9375rem;
+  padding-right: 0.9375rem;
   border-radius: 0.75rem;
   border: 1px solid var(--border-subtle);
   background-color: var(--bg-card);
@@ -234,6 +237,24 @@ h1, h2, h3, h4, h5, h6, strong, .font-heading {
   line-height: 1.25rem;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.crm-input.pl-9 {
+  padding-left: 2.25rem !important;
+}
+.crm-input.pl-10 {
+  padding-left: 2.5rem !important;
+}
+.crm-input.pl-11 {
+  padding-left: 2.75rem !important;
+}
+.crm-input.pl-12 {
+  padding-left: 3rem !important;
+}
+.crm-input.pr-10 {
+  padding-right: 2.5rem !important;
+}
+.crm-input.pr-11 {
+  padding-right: 2.75rem !important;
 }
 .crm-input:focus {
   border-color: #f97316;

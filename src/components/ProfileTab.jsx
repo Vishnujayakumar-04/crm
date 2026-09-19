@@ -426,11 +426,11 @@ export default function ProfileTab({
                 Full Name
               </label>
               <div className="relative">
-                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <User size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
                   required
-                  className="crm-input pl-10 text-sm font-medium"
+                  className="crm-input pl-11 text-sm font-medium"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Vishnu J"
@@ -444,10 +444,10 @@ export default function ProfileTab({
                 Phone Number
               </label>
               <div className="relative">
-                <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <Phone size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="tel"
-                  className="crm-input pl-10 text-sm font-medium"
+                  className="crm-input pl-11 text-sm font-medium"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98765 43210"
@@ -461,10 +461,10 @@ export default function ProfileTab({
                 Date of Birth
               </label>
               <div className="relative">
-                <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <Calendar size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="date"
-                  className="crm-input pl-10 text-sm font-medium"
+                  className="crm-input pl-11 text-sm font-medium"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                 />
