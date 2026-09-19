@@ -22,7 +22,10 @@ import {
 import { sendPasswordReset, isFirebaseConfigured, formatAuthError } from '../utils/firebase'
 
 export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLogout, currentUser }) {
-  const [name, setName] = useState(data.profile?.name || currentUser?.displayName || 'Investor')
+  const [name, setName] = useState(data.profile?.name || currentUser?.displayName || 'Vishnu J')
+  const [phone, setPhone] = useState(data.profile?.phone || '')
+  const [gender, setGender] = useState(data.profile?.gender || 'Male')
+  const [dob, setDob] = useState(data.profile?.dob || '')
   const [profileSaved, setProfileSaved] = useState(false)
 
   // Password reset email state
@@ -36,7 +39,12 @@ export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLog
 
   function handleSaveProfile(e) {
     e.preventDefault()
-    onUpdateProfile({ name: name.trim() || 'Investor' })
+    onUpdateProfile({
+      name: name.trim() || 'Vishnu J',
+      phone: phone.trim(),
+      gender,
+      dob
+    })
     setProfileSaved(true)
     setTimeout(() => setProfileSaved(false), 3000)
   }
@@ -152,8 +160,8 @@ export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLog
           </div>
         </div>
 
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div className="max-w-md">
+        <form onSubmit={handleSaveProfile} className="space-y-4 max-w-lg">
+          <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
               Display Name
             </label>
@@ -167,7 +175,56 @@ export default function SettingsTab({ data, onUpdateData, onUpdateProfile, onLog
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                className="crm-input"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                className="crm-input"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+              Gender
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {['Male', 'Female', 'Other'].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGender(g)}
+                  className={`py-2 text-xs font-semibold rounded-xl border transition-all ${
+                    gender === g
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/20'
+                      : 'bg-white dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-orange-300'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-1">
             <button type="submit" className="btn-primary">
               Save Profile
             </button>

@@ -8,7 +8,10 @@ export const holdingTypes = ['Stock', 'Mutual Fund', 'ETF', 'Gold', 'Crypto', 'O
 export const savingTypes = ['Savings Account', 'Fixed Deposit', 'Recurring Deposit', 'PPF', 'Other']
 
 export const initialProfile = {
-  name: 'Investor',
+  name: 'Vishnu J',
+  phone: '',
+  gender: '',
+  dob: '',
   currency: 'INR',
   tagline: 'Private Wealth Tracker'
 }

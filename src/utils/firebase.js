@@ -15,7 +15,8 @@ import {
   getFirestore,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  serverTimestamp
 } from 'firebase/firestore'
 import { getAnalytics, isSupported } from 'firebase/analytics'
 
@@ -121,7 +122,7 @@ export async function loginWithEmail(email, password) {
 /**
  * Register a new user with email, password, and display name
  */
-export async function registerWithEmail(email, password, fullName) {
+export async function registerWithEmail(email, password, fullName, profileDetails = {}) {
   if (!auth) {
     throw new Error('Firebase Authentication is not initialized.')
   }
@@ -133,6 +134,24 @@ export async function registerWithEmail(email, password, fullName) {
       await updateProfile(user, { displayName: fullName.trim() })
     } catch (err) {
       console.warn('Could not update user display name:', err)
+    }
+  }
+
+  // Persist extended user profile to Cloud Firestore
+  if (db && user) {
+    try {
+      const userDocRef = doc(db, 'users', user.uid)
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: fullName?.trim() || '',
+        phone: profileDetails.phone?.trim() || '',
+        gender: profileDetails.gender || '',
+        dob: profileDetails.dob || '',
+        createdAt: serverTimestamp()
+      }, { merge: true })
+    } catch (err) {
+      console.warn('Could not save user profile details to Firestore:', err)
     }
   }
 
@@ -227,5 +246,46 @@ export async function loadPortfolioFromFirestore(userId) {
   } catch (err) {
     console.warn('Firestore cloud fetch notice:', err.message)
     return null
+  }
+}
+
+/**
+ * Load user extended profile (phone, gender, dob) from Firestore
+ */
+export async function loadUserProfileFromFirestore(userId) {
+  if (!db || !userId) return null
+  try {
+    const userDocRef = doc(db, 'users', userId)
+    const snapshot = await getDoc(userDocRef)
+    if (snapshot.exists()) {
+      const data = snapshot.data()
+      return {
+        displayName: data.displayName || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        gender: data.gender || '',
+        dob: data.dob || ''
+      }
+    }
+    return null
+  } catch (err) {
+    console.warn('Firestore profile fetch notice:', err.message)
+    return null
+  }
+}
+
+/**
+ * Save user extended profile (phone, gender, dob) to Firestore
+ */
+export async function saveUserProfileToFirestore(userId, profile) {
+  if (!db || !userId || !profile) return
+  try {
+    const userDocRef = doc(db, 'users', userId)
+    await setDoc(userDocRef, {
+      ...profile,
+      updatedAt: serverTimestamp()
+    }, { merge: true })
+  } catch (err) {
+    console.warn('Firestore profile save notice:', err.message)
   }
 }

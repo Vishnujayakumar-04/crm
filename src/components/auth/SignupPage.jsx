@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Lock, Mail, User, ArrowRight, Loader2, AlertCircle, CheckCircle2, ShieldCheck, Check, X } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, User, ArrowRight, Loader2, AlertCircle, CheckCircle2, ShieldCheck, Check, X, Phone, Calendar } from 'lucide-react'
 import { registerWithEmail, formatAuthError, isFirebaseConfigured } from '../../utils/firebase'
 import FirebaseConfigAlert from './FirebaseConfigAlert'
 
 export default function SignupPage({ onNavigate, onSignupSuccess }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [gender, setGender] = useState('Male')
+  const [dob, setDob] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -32,6 +35,14 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
       setError('Please enter a valid email address.')
       return
     }
+    if (!phone.trim()) {
+      setError('Please enter your phone number.')
+      return
+    }
+    if (!dob) {
+      setError('Please select your date of birth.')
+      return
+    }
     if (!hasMinLength) {
       setError('Password must be at least 6 characters long.')
       return
@@ -47,7 +58,11 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
 
     setLoading(true)
     try {
-      const user = await registerWithEmail(email, password, fullName)
+      const user = await registerWithEmail(email, password, fullName, {
+        phone: phone.trim(),
+        gender,
+        dob
+      })
       setSuccessInfo({
         email: user.email,
         name: fullName.trim()
@@ -94,7 +109,7 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
     <div>
       {!configured && <FirebaseConfigAlert />}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
         {error && (
           <div className="flex items-start gap-2.5 rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300 border border-red-200 dark:border-red-900/50 leading-relaxed">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
@@ -120,21 +135,81 @@ export default function SignupPage({ onNavigate, onSignupSuccess }) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-            Email Address
-          </label>
-          <div className="relative">
-            <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              className="crm-input pl-11 text-sm font-medium"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                className="crm-input pl-11 text-sm font-medium"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Phone Number
+            </label>
+            <div className="relative">
+              <Phone size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="tel"
+                required
+                autoComplete="tel"
+                className="crm-input pl-11 text-sm font-medium"
+                placeholder="+91 98765 43210"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Gender
+            </label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {['Male', 'Female', 'Other'].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGender(g)}
+                  className={`py-2 text-xs font-semibold rounded-xl border transition-all ${
+                    gender === g
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/20'
+                      : 'bg-white dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-orange-300'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Date of Birth
+            </label>
+            <div className="relative">
+              <Calendar size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="date"
+                required
+                className="crm-input pl-11 text-sm font-medium"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

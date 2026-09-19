@@ -16,6 +16,9 @@ export default function AuthScreen({ onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true)
   const [isForgot, setIsForgot] = useState(false)
   const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [gender, setGender] = useState('Male')
+  const [dob, setDob] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -58,6 +61,14 @@ export default function AuthScreen({ onAuthSuccess }) {
         setError('Please enter your full name.')
         return
       }
+      if (!phone.trim()) {
+        setError('Please enter your phone number.')
+        return
+      }
+      if (!dob.trim()) {
+        setError('Please enter your date of birth (YYYY-MM-DD).')
+        return
+      }
       if (password !== confirmPassword) {
         setError('Passwords do not match.')
         return
@@ -70,7 +81,11 @@ export default function AuthScreen({ onAuthSuccess }) {
         const user = await loginMobile(email, password)
         if (onAuthSuccess) onAuthSuccess(user)
       } else {
-        const user = await signupMobile(email, password, fullName)
+        const user = await signupMobile(email, password, fullName, {
+          phone: phone.trim(),
+          gender,
+          dob: dob.trim()
+        })
         if (onAuthSuccess) onAuthSuccess(user)
       }
     } catch (err) {
@@ -157,19 +172,62 @@ export default function AuthScreen({ onAuthSuccess }) {
             </View>
           ) : null}
 
-          {/* Full Name for Signup */}
+          {/* Full Name, Phone, Gender, and DOB for Signup */}
           {!isLogin && !isForgot && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>FULL NAME</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Vishnu J"
-                placeholderTextColor="#64748b"
-                value={fullName}
-                onChangeText={setFullName}
-                autoCapitalize="words"
-              />
-            </View>
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>FULL NAME</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Vishnu J"
+                  placeholderTextColor="#64748b"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>PHONE NUMBER</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="+91 98765 43210"
+                  placeholderTextColor="#64748b"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>GENDER</Text>
+                <View style={styles.tabSwitchContainer}>
+                  {['Male', 'Female', 'Other'].map((g) => (
+                    <TouchableOpacity
+                      key={g}
+                      onPress={() => setGender(g)}
+                      style={[styles.tabButton, gender === g && styles.tabButtonActive]}
+                    >
+                      <Text style={[styles.tabButtonText, gender === g && styles.tabButtonTextActive]}>
+                        {g}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>DATE OF BIRTH (YYYY-MM-DD)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 1995-08-24"
+                  placeholderTextColor="#64748b"
+                  value={dob}
+                  onChangeText={setDob}
+                />
+              </View>
+            </>
           )}
 
           {/* Email Address */}

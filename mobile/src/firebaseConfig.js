@@ -52,10 +52,28 @@ export async function loginMobile(email, password) {
   return cred.user
 }
 
-export async function signupMobile(email, password, displayName) {
+export async function signupMobile(email, password, displayName, profileDetails = {}) {
   const cred = await createUserWithEmailAndPassword(auth, email.trim(), password)
   if (displayName && cred.user) {
-    await updateProfile(cred.user, { displayName })
+    try {
+      await updateProfile(cred.user, { displayName })
+    } catch {}
+  }
+  if (cred.user) {
+    try {
+      const userDocRef = doc(db, 'users', cred.user.uid)
+      await setDoc(userDocRef, {
+        uid: cred.user.uid,
+        email: cred.user.email,
+        displayName: displayName || '',
+        phone: profileDetails.phone || '',
+        gender: profileDetails.gender || '',
+        dob: profileDetails.dob || '',
+        createdAt: serverTimestamp()
+      }, { merge: true })
+    } catch (e) {
+      console.warn('Could not save mobile user profile:', e)
+    }
   }
   return cred.user
 }
