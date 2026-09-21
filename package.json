@@ -7,12 +7,16 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "concurrently --kill-others-on-fail -n \"FRONTEND,BACKEND\" -c \"cyan,magenta\" \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "start:backend": "npm start --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "preview": "npm run preview --prefix frontend",
     "electron:start": "electron .",
-    "build:win": "vite build && electron-builder --win nsis",
-    "build:portable": "vite build && electron-builder --win portable",
+    "build:win": "npm run build:frontend && electron-builder --win nsis",
+    "build:portable": "npm run build:frontend && electron-builder --win portable",
     "pack:win": "electron-builder --win --dir"
   },
   "build": {
@@ -23,9 +27,11 @@
       "output": "dist-electron"
     },
     "files": [
+      "frontend/dist/**/*",
       "dist/**/*",
       "electron/**/*",
-      "public/**/*"
+      "public/**/*",
+      "frontend/public/**/*"
     ],
     "win": {
       "target": [
@@ -51,6 +57,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.5",
     "electron": "^44.4.3",
     "electron-builder": "^26.15.3",
     "postcss": "^8.4.49",

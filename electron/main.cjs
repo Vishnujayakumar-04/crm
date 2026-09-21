@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron')
 const path = require('path')
+const fs = require('fs')
 
 // Ensure single application instance
 const gotTheLock = app.requestSingleInstanceLock()
@@ -8,6 +9,18 @@ if (!gotTheLock) {
 }
 
 let mainWindow = null
+
+function getDistIndexPath() {
+  const frontendDist = path.join(__dirname, '../frontend/dist/index.html')
+  if (fs.existsSync(frontendDist)) return frontendDist
+  return path.join(__dirname, '../dist/index.html')
+}
+
+function getAppIconPath() {
+  const frontendIcon = path.join(__dirname, '../frontend/public/icons/icon-512.png')
+  if (fs.existsSync(frontendIcon)) return frontendIcon
+  return path.join(__dirname, '../public/icons/icon-512.png')
+}
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -18,7 +31,7 @@ function createMainWindow() {
     backgroundColor: '#0d0f14',
     show: false,
     title: 'Portfolio CRM — Personal Wealth & Investment Manager',
-    icon: path.join(__dirname, '../public/icons/icon-512.png'),
+    icon: getAppIconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -103,10 +116,10 @@ function createMainWindow() {
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173').catch(() => {
       // Fallback to local dist file if dev server is unreachable
-      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+      mainWindow.loadFile(getDistIndexPath())
     })
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+    mainWindow.loadFile(getDistIndexPath())
   }
 
   mainWindow.on('closed', () => {
