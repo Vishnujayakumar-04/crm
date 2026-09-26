@@ -8,7 +8,7 @@ import {
   RefreshControl,
   Image
 } from 'react-native'
-import { fmtINR, fmtPercent, computePortfolioSummary } from '../utils/calculations'
+import { fmtINR, fmtPercent, computePortfolioSummary, computeCashFlowSummary } from '../utils/calculations'
 
 export default function DashboardScreen({
   portfolio,
@@ -21,9 +21,12 @@ export default function DashboardScreen({
 }) {
   const holdings = portfolio?.holdings || []
   const savings = portfolio?.savings || []
+  const expenses = portfolio?.expenses || []
+  const income = portfolio?.income || []
   const activities = portfolio?.activities || []
 
   const summary = computePortfolioSummary(holdings, savings)
+  const cashFlow = computeCashFlowSummary(expenses, income, 'month')
   const isPnlPositive = summary.totalPnl >= 0
 
   const userName = user?.displayName || portfolio?.profile?.name || 'Investor'
@@ -121,12 +124,22 @@ export default function DashboardScreen({
 
         <TouchableOpacity
           style={styles.actionPill}
+          onPress={() => onNavigateTab('Expenses')}
+        >
+          <View style={[styles.actionIconBg, { backgroundColor: '#f43f5e' }]}>
+            <Text style={styles.actionIconText}>💳</Text>
+          </View>
+          <Text style={styles.actionPillText}>Expenses</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionPill}
           onPress={onRefresh}
         >
           <View style={[styles.actionIconBg, { backgroundColor: '#3b82f6' }]}>
             <Text style={styles.actionIconText}>🔄</Text>
           </View>
-          <Text style={styles.actionPillText}>Cloud Sync</Text>
+          <Text style={styles.actionPillText}>Sync</Text>
         </TouchableOpacity>
       </View>
 
@@ -182,6 +195,32 @@ export default function DashboardScreen({
           <Text style={styles.subCardAmount}>{fmtINR(summary.totalSavings)}</Text>
           <Text style={styles.subCardSubtext}>
             Maturity: {fmtINR(summary.savingsAccountsTotal + summary.fdsMaturityTotal)}
+          </Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* Monthly Cash Flow Mini Card */}
+      <TouchableOpacity
+        style={styles.subCard}
+        onPress={() => onNavigateTab('Expenses')}
+      >
+        <View style={styles.subCardLeft}>
+          <View style={[styles.subIconBg, { backgroundColor: 'rgba(244, 63, 94, 0.15)' }]}>
+            <Text style={styles.subIconText}>💳</Text>
+          </View>
+          <View>
+            <Text style={styles.subCardTitle}>Monthly Cash Flow</Text>
+            <Text style={styles.subCardSubtitle}>
+              Income {fmtINR(cashFlow.totalIncome)} · Exp {fmtINR(cashFlow.totalExpenses)}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.subCardRight}>
+          <Text style={[styles.subCardAmount, cashFlow.remaining >= 0 ? styles.pnlPositive : styles.pnlNegative]}>
+            {cashFlow.remaining >= 0 ? '+' : ''}{fmtINR(cashFlow.remaining)}
+          </Text>
+          <Text style={styles.subCardSubtext}>
+            {cashFlow.savingsRate.toFixed(0)}% Saved
           </Text>
         </View>
       </TouchableOpacity>

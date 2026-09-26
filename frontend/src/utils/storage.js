@@ -7,6 +7,54 @@ const KEYS = {
 export const holdingTypes = ['Stock', 'Mutual Fund', 'ETF', 'Gold', 'Crypto', 'Other']
 export const savingTypes = ['Savings Account', 'Fixed Deposit', 'Recurring Deposit', 'PPF', 'Other']
 
+export const defaultExpenseCategories = [
+  'Food',
+  'Rent',
+  'Travel',
+  'Shopping',
+  'Bills',
+  'Healthcare',
+  'Education',
+  'Entertainment',
+  'Personal',
+  'Family',
+  'EMI / Loans',
+  'Other'
+]
+
+export const defaultIncomeCategories = [
+  'Salary',
+  'Freelance',
+  'Interest',
+  'Dividend',
+  'Bonus',
+  'Other'
+]
+
+export const paymentMethods = [
+  'Cash',
+  'UPI',
+  'Debit Card',
+  'Credit Card',
+  'Bank Transfer',
+  'Other'
+]
+
+export const categoryColors = {
+  Food: '#f97316',
+  Rent: '#ef4444',
+  Travel: '#3b82f6',
+  Shopping: '#ec4899',
+  Bills: '#eab308',
+  Healthcare: '#10b981',
+  Education: '#8b5cf6',
+  Entertainment: '#06b6d4',
+  Personal: '#f59e0b',
+  Family: '#14b8a6',
+  'EMI / Loans': '#6366f1',
+  Other: '#64748b'
+}
+
 export const initialProfile = {
   name: 'Vishnu J',
   phone: '',
@@ -20,6 +68,8 @@ export const initialProfile = {
 const emptyData = {
   holdings: [],
   savings: [],
+  expenses: [],
+  income: [],
   activities: [],
   history: [],
   profile: initialProfile
@@ -71,6 +121,8 @@ export function loadUserData(userId) {
     return {
       holdings: Array.isArray(parsed.holdings) ? parsed.holdings : [],
       savings: Array.isArray(parsed.savings) ? parsed.savings : [],
+      expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
+      income: Array.isArray(parsed.income) ? parsed.income : [],
       activities: Array.isArray(parsed.activities) ? parsed.activities : [],
       history: Array.isArray(parsed.history) ? parsed.history : [],
       profile: parsed.profile && typeof parsed.profile === 'object' ? { ...initialProfile, ...parsed.profile } : initialProfile
@@ -201,8 +253,87 @@ export function parseImportedJSON(jsonString) {
   return {
     holdings: Array.isArray(parsed.holdings) ? parsed.holdings : [],
     savings: Array.isArray(parsed.savings) ? parsed.savings : [],
+    expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
+    income: Array.isArray(parsed.income) ? parsed.income : [],
     activities: Array.isArray(parsed.activities) ? parsed.activities : [],
     history: Array.isArray(parsed.history) ? parsed.history : [],
     profile: parsed.profile && typeof parsed.profile === 'object' ? { ...initialProfile, ...parsed.profile } : initialProfile
+  }
+}
+
+/**
+ * Calculates start and end timestamps for a given financial period filter
+ */
+export function getDateRangeForPeriod(period = 'This Month', customRange = {}) {
+  const now = new Date()
+  let start = new Date()
+  let end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+
+  switch (period) {
+    case 'this-month':
+    case 'This Month':
+      start = new Date(now.getFullYear(), now.getMonth(), 1)
+      break
+    case 'last-month':
+    case 'Last Month':
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+      break
+    case '3-months':
+    case '3 Months':
+      start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+      break
+    case '6-months':
+    case '6 Months':
+      start = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+      break
+    case 'this-year':
+    case 'This Year':
+      start = new Date(now.getFullYear(), 0, 1)
+      break
+    case 'custom':
+    case 'Custom Range':
+      if (customRange.start) start = new Date(customRange.start)
+      if (customRange.end) end = new Date(customRange.end + 'T23:59:59')
+      break
+    case 'all':
+    default:
+      start = new Date(2000, 0, 1)
+      break
+  }
+  return { start, end }
+}
+
+/**
+ * Filter items by their date property against a chosen period
+ */
+export function filterByPeriod(items = [], period = 'This Month', customRange = {}) {
+  const { start, end } = getDateRangeForPeriod(period, customRange)
+  return items.filter((item) => {
+    if (!item.date) return false
+    const itemDate = new Date(item.date)
+    return itemDate >= start && itemDate <= end
+  })
+}
+
+/**
+ * Computes Cash Flow Summary (Income, Expenses, Remaining Balance, Savings Rate)
+ */
+export function computeCashFlowSummary(income = [], expenses = [], period = 'This Month', customRange = {}) {
+  const filteredIncome = filterByPeriod(income, period, customRange)
+  const filteredExpenses = filterByPeriod(expenses, period, customRange)
+
+  const totalIncome = filteredIncome.reduce((acc, item) => acc + (Number(item.amount) || 0), 0)
+  const totalExpenses = filteredExpenses.reduce((acc, item) => acc + (Number(item.amount) || 0), 0)
+  const remainingBalance = totalIncome - totalExpenses
+  const savingsRate = totalIncome > 0 ? Math.max(0, (remainingBalance / totalIncome) * 100) : 0
+
+  return {
+    totalIncome,
+    totalExpenses,
+    remainingBalance,
+    savingsRate,
+    filteredIncome,
+    filteredExpenses
   }
 }

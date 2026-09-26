@@ -36,12 +36,14 @@ import {
   Menu,
   X,
   UserCheck,
-  Loader2
+  Loader2,
+  Receipt
 } from 'lucide-react'
 import AuthGate from './components/AuthGate'
 import HoldingsTab from './components/HoldingsTab'
 import SavingsTab from './components/SavingsTab'
 import AllocationTab from './components/AllocationTab'
+import ExpenseTab from './components/ExpenseTab'
 import ReportsTab from './components/ReportsTab'
 import ProfileTab from './components/ProfileTab'
 import HoldingModal from './components/HoldingModal'
@@ -54,7 +56,8 @@ import {
   saveUserData,
   newId,
   createActivityRecord,
-  getDaysRemaining
+  getDaysRemaining,
+  computeCashFlowSummary
 } from './utils/storage'
 import {
   onAuthChange,
@@ -71,6 +74,7 @@ const navItems = [
   { id: 'holdings', label: 'Shares & Funds', icon: WalletCards },
   { id: 'savings', label: 'Savings & FDs', icon: Landmark },
   { id: 'allocation', label: 'Allocation', icon: PieIcon },
+  { id: 'expenses', label: 'Expenses', icon: Receipt },
   { id: 'reports', label: 'Reports', icon: TrendingUp },
   { id: 'profile', label: 'Profile', icon: User },
 ]
@@ -131,12 +135,23 @@ export default function App() {
         // 3. Asynchronously sync with Firestore cloud storage
         try {
           const cloudData = await loadPortfolioFromFirestore(user.uid)
-          if (cloudData && (cloudData.holdings?.length > 0 || cloudData.savings?.length > 0)) {
-            if (localPortfolio.holdings.length === 0 && localPortfolio.savings.length === 0) {
-              setData(cloudData)
-              saveUserData(user.uid, cloudData)
-            }
-          } else if (localPortfolio.holdings.length > 0 || localPortfolio.savings.length > 0) {
+          const hasCloudContent = cloudData && (
+            (cloudData.holdings || []).length > 0 ||
+            (cloudData.savings || []).length > 0 ||
+            (cloudData.expenses || []).length > 0 ||
+            (cloudData.income || []).length > 0
+          )
+          const hasLocalContent = (
+            (localPortfolio.holdings || []).length > 0 ||
+            (localPortfolio.savings || []).length > 0 ||
+            (localPortfolio.expenses || []).length > 0 ||
+            (localPortfolio.income || []).length > 0
+          )
+
+          if (hasCloudContent && !hasLocalContent) {
+            setData(cloudData)
+            saveUserData(user.uid, cloudData)
+          } else if (hasLocalContent) {
             savePortfolioToFirestore(user.uid, localPortfolio)
           }
         } catch {
@@ -254,6 +269,68 @@ export default function App() {
         activities: activity ? [activity, ...(curr.activities || [])].slice(0, 20) : curr.activities
       }
     })
+  }
+
+  // Expense Handlers
+  function handleAddExpense(expense) {
+    const activity = createActivityRecord(
+      'EXPENSE',
+      `Spent on ${expense.category}`,
+      `${expense.description || expense.category} (${expense.paymentMethod || 'UPI'})`,
+      expense.amount,
+      'Logged',
+      false
+    )
+    setData((curr) => ({
+      ...curr,
+      expenses: [expense, ...(curr.expenses || [])],
+      activities: [activity, ...(curr.activities || [])].slice(0, 20)
+    }))
+  }
+
+  function handleUpdateExpense(updated) {
+    setData((curr) => ({
+      ...curr,
+      expenses: (curr.expenses || []).map((e) => (e.id === updated.id ? updated : e))
+    }))
+  }
+
+  function handleDeleteExpense(id) {
+    setData((curr) => ({
+      ...curr,
+      expenses: (curr.expenses || []).filter((e) => e.id !== id)
+    }))
+  }
+
+  // Income Handlers
+  function handleAddIncome(inc) {
+    const activity = createActivityRecord(
+      'INCOME',
+      `Received ${inc.category}`,
+      inc.description || inc.category,
+      inc.amount,
+      'Received',
+      true
+    )
+    setData((curr) => ({
+      ...curr,
+      income: [inc, ...(curr.income || [])],
+      activities: [activity, ...(curr.activities || [])].slice(0, 20)
+    }))
+  }
+
+  function handleUpdateIncome(updated) {
+    setData((curr) => ({
+      ...curr,
+      income: (curr.income || []).map((i) => (i.id === updated.id ? updated : i))
+    }))
+  }
+
+  function handleDeleteIncome(id) {
+    setData((curr) => ({
+      ...curr,
+      income: (curr.income || []).filter((i) => i.id !== id)
+    }))
   }
 
   function handleTakeSnapshot() {
@@ -541,6 +618,8 @@ export default function App() {
               savings={data.savings}
               activities={data.activities || []}
               history={data.history || []}
+              expenses={data.expenses || []}
+              income={data.income || []}
               userName={userName}
               greeting={greeting}
               todayFormatted={todayFormatted}
@@ -577,6 +656,19 @@ export default function App() {
             />
           )}
 
+          {tab === 'expenses' && (
+            <ExpenseTab
+              expenses={data.expenses || []}
+              income={data.income || []}
+              onAddExpense={handleAddExpense}
+              onUpdateExpense={handleUpdateExpense}
+              onDeleteExpense={handleDeleteExpense}
+              onAddIncome={handleAddIncome}
+              onUpdateIncome={handleUpdateIncome}
+              onDeleteIncome={handleDeleteIncome}
+            />
+          )}
+
           {tab === 'reports' && (
             <ReportsTab
               holdings={data.holdings}
@@ -602,19 +694,21 @@ export default function App() {
       {/* MOBILE BOTTOM NAVIGATION BAR                              */}
       {/* ========================================================= */}
       <nav className="md:hidden mobile-bottom-nav" aria-label="Mobile Navigation">
-        {navItems.slice(0, 5).map(({ id, label, icon: Icon }) => {
-          const active = tab === id
-          return (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`mobile-nav-item ${active ? 'active' : ''}`}
-            >
-              <Icon size={19} />
-              <span>{label}</span>
-            </button>
-          )
-        })}
+        {navItems
+          .filter((item) => ['dashboard', 'holdings', 'savings', 'allocation', 'expenses'].includes(item.id))
+          .map(({ id, label, icon: Icon }) => {
+            const active = tab === id
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`mobile-nav-item ${active ? 'active' : ''}`}
+              >
+                <Icon size={19} />
+                <span>{label}</span>
+              </button>
+            )
+          })}
         <button
           onClick={() => setTab('profile')}
           className={`mobile-nav-item ${tab === 'profile' || tab === 'settings' ? 'active' : ''}`}
@@ -650,6 +744,8 @@ function DashboardOverview({
   savings,
   activities,
   history,
+  expenses = [],
+  income = [],
   userName,
   greeting,
   todayFormatted,
@@ -660,6 +756,11 @@ function DashboardOverview({
 }) {
   const [chartPeriod, setChartPeriod] = useState('ALL')
   const isPositive = summary.gain >= 0
+
+  // Monthly Cash Flow for Overview (current month)
+  const monthlyCashFlow = useMemo(() => {
+    return computeCashFlowSummary(income, expenses, 'This Month')
+  }, [income, expenses])
 
   // Asset allocation categories for donut
   const allocation = useMemo(() => {
@@ -856,6 +957,80 @@ function DashboardOverview({
           </div>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* MONTHLY CASH FLOW SUMMARY SECTION                         */}
+      {/* ========================================================= */}
+      <section className="crm-card p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-gray-800 gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
+              <Receipt size={16} />
+            </div>
+            <div>
+              <h3 className="font-heading text-sm font-bold text-gray-900 dark:text-white">
+                Monthly Cash Flow
+              </h3>
+              <p className="text-[11px] text-gray-400">
+                Income inflows, living expenses, and cash savings rate for this month
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('expenses')}
+            className="flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-500 dark:text-orange-400 self-start sm:self-auto"
+          >
+            <span>View Expenses</span>
+            <ChevronRight size={14} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+              Monthly Income
+            </span>
+            <p className="font-heading font-extrabold text-lg text-emerald-600 dark:text-emerald-400">
+              {fmtINR(monthlyCashFlow.totalIncome)}
+            </p>
+            <span className="text-[11px] text-gray-400 mt-0.5 block">
+              {monthlyCashFlow.filteredIncome.length} recorded inflows
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+              Monthly Expenses
+            </span>
+            <p className="font-heading font-extrabold text-lg text-red-600 dark:text-red-400">
+              {fmtINR(monthlyCashFlow.totalExpenses)}
+            </p>
+            <span className="text-[11px] text-gray-400 mt-0.5 block">
+              {monthlyCashFlow.filteredExpenses.length} transactions
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+              Net Cash Flow
+            </span>
+            <p
+              className={`font-heading font-extrabold text-lg ${
+                monthlyCashFlow.remainingBalance >= 0
+                  ? 'text-gray-900 dark:text-white'
+                  : 'text-red-600 dark:text-red-400'
+              }`}
+            >
+              {fmtINR(monthlyCashFlow.remainingBalance)}
+            </p>
+            <span className="text-[11px] text-gray-400 mt-0.5 block">
+              {monthlyCashFlow.totalIncome > 0
+                ? `${monthlyCashFlow.savingsRate.toFixed(1)}% savings rate`
+                : 'No income recorded this month'}
+            </span>
+          </div>
+        </div>
+      </section>
 
       {/* ========================================================= */}
       {/* ROW 2: PERFORMANCE CHART + ASSET ALLOCATION DONUT         */}

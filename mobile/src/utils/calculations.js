@@ -84,3 +84,44 @@ export function computePortfolioSummary(holdings = [], savings = []) {
     totalInvested
   }
 }
+
+export function computeCashFlowSummary(income = [], expenses = [], period = 'This Month') {
+  const now = new Date()
+  let start = new Date(now.getFullYear(), now.getMonth(), 1)
+  let end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+  if (period === 'Last Month') {
+    start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+  } else if (period === '3 Months') {
+    start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+  } else if (period === 'All') {
+    start = new Date(2000, 0, 1)
+  }
+
+  const filteredIncome = (income || []).filter((i) => {
+    if (!i.date) return false
+    const d = new Date(i.date)
+    return d >= start && d <= end
+  })
+
+  const filteredExpenses = (expenses || []).filter((e) => {
+    if (!e.date) return false
+    const d = new Date(e.date)
+    return d >= start && d <= end
+  })
+
+  const totalIncome = filteredIncome.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
+  const totalExpenses = filteredExpenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0)
+  const remaining = totalIncome - totalExpenses
+  const savingsRate = totalIncome > 0 ? Math.max(0, (remaining / totalIncome) * 100) : 0
+
+  return {
+    totalIncome,
+    totalExpenses,
+    remaining,
+    savingsRate,
+    filteredIncome,
+    filteredExpenses
+  }
+}

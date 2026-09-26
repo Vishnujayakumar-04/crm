@@ -24,6 +24,8 @@ export function getUserData(uid) {
       profile: { name: 'Vishnu J', phone: '', gender: 'Male', dob: '', avatar: '' },
       holdings: [],
       savings: [],
+      expenses: [],
+      income: [],
       activities: [],
       history: []
     }

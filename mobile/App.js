@@ -19,12 +19,15 @@ import DashboardScreen from './src/screens/DashboardScreen'
 import HoldingsScreen from './src/screens/HoldingsScreen'
 import SavingsScreen from './src/screens/SavingsScreen'
 import AllocationScreen from './src/screens/AllocationScreen'
+import ExpensesScreen from './src/screens/ExpensesScreen'
 import SettingsScreen from './src/screens/SettingsScreen'
 
 const DEFAULT_PORTFOLIO = {
   profile: { name: 'Investor' },
   holdings: [],
   savings: [],
+  expenses: [],
+  income: [],
   activities: []
 }
 
@@ -164,6 +167,72 @@ export default function App() {
     }))
   }
 
+  // Expense actions
+  function handleSaveExpense(expense) {
+    updatePortfolio((curr) => {
+      const exists = (curr.expenses || []).some((e) => e.id === expense.id)
+      const newExpenses = exists
+        ? curr.expenses.map((e) => (e.id === expense.id ? expense : e))
+        : [expense, ...(curr.expenses || [])]
+
+      const act = {
+        id: 'act_' + Date.now(),
+        type: 'EXPENSE',
+        title: `${exists ? 'Updated' : 'Added'} ${expense.category || 'Expense'}`,
+        details: expense.notes || expense.paymentMethod || 'Expense',
+        amount: parseFloat(expense.amount) || 0,
+        time: 'Just now',
+        status: 'Completed'
+      }
+
+      return {
+        ...curr,
+        expenses: newExpenses,
+        activities: [act, ...(curr.activities || [])].slice(0, 20)
+      }
+    })
+  }
+
+  function handleDeleteExpense(id) {
+    updatePortfolio((curr) => ({
+      ...curr,
+      expenses: (curr.expenses || []).filter((e) => e.id !== id)
+    }))
+  }
+
+  // Income actions
+  function handleSaveIncome(inc) {
+    updatePortfolio((curr) => {
+      const exists = (curr.income || []).some((i) => i.id === inc.id)
+      const newIncome = exists
+        ? curr.income.map((i) => (i.id === inc.id ? inc : i))
+        : [inc, ...(curr.income || [])]
+
+      const act = {
+        id: 'act_' + Date.now(),
+        type: 'INCOME',
+        title: `${exists ? 'Updated' : 'Added'} ${inc.source || inc.category || 'Income'}`,
+        details: inc.notes || 'Income Credited',
+        amount: parseFloat(inc.amount) || 0,
+        time: 'Just now',
+        status: 'Completed'
+      }
+
+      return {
+        ...curr,
+        income: newIncome,
+        activities: [act, ...(curr.activities || [])].slice(0, 20)
+      }
+    })
+  }
+
+  function handleDeleteIncome(id) {
+    updatePortfolio((curr) => ({
+      ...curr,
+      income: (curr.income || []).filter((i) => i.id !== id)
+    }))
+  }
+
   if (authLoading) {
     return (
       <View style={styles.splashContainer}>
@@ -218,6 +287,15 @@ export default function App() {
         {currentTab === 'Allocation' && (
           <AllocationScreen portfolio={portfolio} />
         )}
+        {currentTab === 'Expenses' && (
+          <ExpensesScreen
+            portfolio={portfolio}
+            onSaveExpense={handleSaveExpense}
+            onDeleteExpense={handleDeleteExpense}
+            onSaveIncome={handleSaveIncome}
+            onDeleteIncome={handleDeleteIncome}
+          />
+        )}
         {(currentTab === 'Profile' || currentTab === 'Settings') && (
           <SettingsScreen
             user={user}
@@ -235,6 +313,7 @@ export default function App() {
           { id: 'Holdings', label: 'Holdings', icon: '📈' },
           { id: 'Savings', label: 'Savings', icon: '🏦' },
           { id: 'Allocation', label: 'Allocation', icon: '🥧' },
+          { id: 'Expenses', label: 'Expenses', icon: '💳' },
           { id: 'Profile', label: 'Profile', icon: '👤' }
         ].map((tab) => {
           const isActive = currentTab === tab.id || (tab.id === 'Profile' && currentTab === 'Settings')
