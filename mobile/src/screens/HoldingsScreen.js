@@ -6,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal
+  Modal,
+  Alert
 } from 'react-native'
 import { fmtINR, fmtPercent } from '../utils/calculations'
 
@@ -276,8 +277,21 @@ export default function HoldingsScreen({ portfolio, onSaveHolding, onDeleteHoldi
                 <TouchableOpacity
                   style={styles.modalDeleteBtn}
                   onPress={() => {
-                    onDeleteHolding(editingId)
-                    setModalVisible(false)
+                    Alert.alert(
+                      'Delete Investment',
+                      `Are you sure you want to delete ${name || 'this asset'} from your portfolio? This action cannot be undone.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            onDeleteHolding(editingId)
+                            setModalVisible(false)
+                          }
+                        }
+                      ]
+                    )
                   }}
                 >
                   <Text style={styles.modalDeleteText}>Delete</Text>

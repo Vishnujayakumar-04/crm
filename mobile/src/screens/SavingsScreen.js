@@ -6,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal
+  Modal,
+  Alert
 } from 'react-native'
 import { fmtINR, calcFDMaturity, getDaysRemaining } from '../utils/calculations'
 
@@ -289,8 +290,21 @@ export default function SavingsScreen({ portfolio, onSaveSaving, onDeleteSaving 
                 <TouchableOpacity
                   style={styles.modalDeleteBtn}
                   onPress={() => {
-                    onDeleteSaving(editingId)
-                    setModalVisible(false)
+                    Alert.alert(
+                      'Delete Account / Deposit',
+                      `Are you sure you want to remove ${name || 'this record'}? This action cannot be undone.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            onDeleteSaving(editingId)
+                            setModalVisible(false)
+                          }
+                        }
+                      ]
+                    )
                   }}
                 >
                   <Text style={styles.modalDeleteText}>Delete</Text>

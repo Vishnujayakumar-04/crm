@@ -9,6 +9,15 @@ import {
   Image
 } from 'react-native'
 import { fmtINR, fmtPercent, computePortfolioSummary, computeCashFlowSummary } from '../utils/calculations'
+import {
+  TrendingUp,
+  Landmark,
+  PieChart,
+  Receipt,
+  RefreshCw,
+  BarChart2,
+  Wallet
+} from 'lucide-react-native'
 
 export default function DashboardScreen({
   portfolio,
@@ -95,9 +104,10 @@ export default function DashboardScreen({
         <TouchableOpacity
           style={styles.actionPill}
           onPress={() => onNavigateTab('Holdings')}
+          activeOpacity={0.7}
         >
           <View style={[styles.actionIconBg, { backgroundColor: '#f97316' }]}>
-            <Text style={styles.actionIconText}>📈</Text>
+            <TrendingUp size={22} color="#ffffff" strokeWidth={2.2} />
           </View>
           <Text style={styles.actionPillText}>Holdings</Text>
         </TouchableOpacity>
@@ -105,9 +115,10 @@ export default function DashboardScreen({
         <TouchableOpacity
           style={styles.actionPill}
           onPress={() => onNavigateTab('Savings')}
+          activeOpacity={0.7}
         >
           <View style={[styles.actionIconBg, { backgroundColor: '#10b981' }]}>
-            <Text style={styles.actionIconText}>🏦</Text>
+            <Landmark size={22} color="#ffffff" strokeWidth={2.2} />
           </View>
           <Text style={styles.actionPillText}>Savings &amp; FDs</Text>
         </TouchableOpacity>
@@ -115,9 +126,10 @@ export default function DashboardScreen({
         <TouchableOpacity
           style={styles.actionPill}
           onPress={() => onNavigateTab('Allocation')}
+          activeOpacity={0.7}
         >
           <View style={[styles.actionIconBg, { backgroundColor: '#8b5cf6' }]}>
-            <Text style={styles.actionIconText}>🥧</Text>
+            <PieChart size={22} color="#ffffff" strokeWidth={2.2} />
           </View>
           <Text style={styles.actionPillText}>Allocation</Text>
         </TouchableOpacity>
@@ -125,9 +137,10 @@ export default function DashboardScreen({
         <TouchableOpacity
           style={styles.actionPill}
           onPress={() => onNavigateTab('Expenses')}
+          activeOpacity={0.7}
         >
           <View style={[styles.actionIconBg, { backgroundColor: '#f43f5e' }]}>
-            <Text style={styles.actionIconText}>💳</Text>
+            <Receipt size={22} color="#ffffff" strokeWidth={2.2} />
           </View>
           <Text style={styles.actionPillText}>Expenses</Text>
         </TouchableOpacity>
@@ -135,9 +148,10 @@ export default function DashboardScreen({
         <TouchableOpacity
           style={styles.actionPill}
           onPress={onRefresh}
+          activeOpacity={0.7}
         >
           <View style={[styles.actionIconBg, { backgroundColor: '#3b82f6' }]}>
-            <Text style={styles.actionIconText}>🔄</Text>
+            <RefreshCw size={20} color="#ffffff" strokeWidth={2.2} />
           </View>
           <Text style={styles.actionPillText}>Sync</Text>
         </TouchableOpacity>
@@ -155,10 +169,11 @@ export default function DashboardScreen({
       <TouchableOpacity
         style={styles.subCard}
         onPress={() => onNavigateTab('Holdings')}
+        activeOpacity={0.7}
       >
         <View style={styles.subCardLeft}>
           <View style={[styles.subIconBg, { backgroundColor: 'rgba(249, 115, 22, 0.15)' }]}>
-            <Text style={styles.subIconText}>📊</Text>
+            <BarChart2 size={20} color="#f97316" strokeWidth={2.2} />
           </View>
           <View>
             <Text style={styles.subCardTitle}>Equities &amp; Mutual Funds</Text>
@@ -179,10 +194,11 @@ export default function DashboardScreen({
       <TouchableOpacity
         style={styles.subCard}
         onPress={() => onNavigateTab('Savings')}
+        activeOpacity={0.7}
       >
         <View style={styles.subCardLeft}>
           <View style={[styles.subIconBg, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-            <Text style={styles.subIconText}>💰</Text>
+            <Landmark size={20} color="#10b981" strokeWidth={2.2} />
           </View>
           <View>
             <Text style={styles.subCardTitle}>Savings &amp; Fixed Deposits</Text>
@@ -203,10 +219,11 @@ export default function DashboardScreen({
       <TouchableOpacity
         style={styles.subCard}
         onPress={() => onNavigateTab('Expenses')}
+        activeOpacity={0.7}
       >
         <View style={styles.subCardLeft}>
           <View style={[styles.subIconBg, { backgroundColor: 'rgba(244, 63, 94, 0.15)' }]}>
-            <Text style={styles.subIconText}>💳</Text>
+            <Receipt size={20} color="#f43f5e" strokeWidth={2.2} />
           </View>
           <View>
             <Text style={styles.subCardTitle}>Monthly Cash Flow</Text>

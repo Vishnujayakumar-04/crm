@@ -90,15 +90,24 @@ export async function sendMobilePasswordReset(email) {
   return sendPasswordResetEmail(auth, email.trim())
 }
 
-// Cloud Firestore Sync (users/{uid}/portfolio/data)
+// Cloud Firestore Sync (Unified across Web, Desktop, and Mobile)
 export async function saveMobilePortfolio(userId, portfolioData) {
   if (!userId) return false
   try {
-    const userDocRef = doc(db, 'users', userId, 'portfolio', 'data')
+    // 1. Primary document: users/{userId}.portfolio
+    const userDocRef = doc(db, 'users', userId)
     await setDoc(userDocRef, {
+      portfolio: portfolioData,
+      updatedAt: serverTimestamp()
+    }, { merge: true })
+
+    // 2. Also keep subcollection synchronized for full backward compatibility
+    const subDocRef = doc(db, 'users', userId, 'portfolio', 'data')
+    await setDoc(subDocRef, {
       ...portfolioData,
       updatedAt: serverTimestamp()
     }, { merge: true })
+
     return true
   } catch (err) {
     console.warn('Firestore mobile save error:', err)
@@ -109,11 +118,20 @@ export async function saveMobilePortfolio(userId, portfolioData) {
 export async function loadMobilePortfolio(userId) {
   if (!userId) return null
   try {
-    const userDocRef = doc(db, 'users', userId, 'portfolio', 'data')
+    // 1. Check primary location: users/{userId}.portfolio
+    const userDocRef = doc(db, 'users', userId)
     const snap = await getDoc(userDocRef)
-    if (snap.exists()) {
-      return snap.data()
+    if (snap.exists() && snap.data()?.portfolio) {
+      return snap.data().portfolio
     }
+
+    // 2. Fallback check: users/{userId}/portfolio/data
+    const subDocRef = doc(db, 'users', userId, 'portfolio', 'data')
+    const subSnap = await getDoc(subDocRef)
+    if (subSnap.exists()) {
+      return subSnap.data()
+    }
+
     return null
   } catch (err) {
     console.warn('Firestore mobile load error:', err)

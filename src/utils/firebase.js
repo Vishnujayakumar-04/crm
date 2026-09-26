@@ -228,21 +228,31 @@ export async function savePortfolioToFirestore(userId, portfolioData) {
     }, { merge: true })
   } catch (err) {
     console.warn('Firestore cloud sync notice:', err.message)
+    throw err
   }
 }
 
 /**
- * Load user portfolio data from Firestore
+ * Load user portfolio data from Firestore with subcollection fallback
  */
 export async function loadPortfolioFromFirestore(userId) {
   if (!db || !userId) return null
   try {
+    // 1. Primary document check: users/{userId}.portfolio
     const userDocRef = doc(db, 'users', userId)
     const snapshot = await getDoc(userDocRef)
     if (snapshot.exists()) {
       const data = snapshot.data()
-      return data?.portfolio || null
+      if (data?.portfolio) return data.portfolio
     }
+
+    // 2. Fallback check: users/{userId}/portfolio/data
+    const subDocRef = doc(db, 'users', userId, 'portfolio', 'data')
+    const subSnap = await getDoc(subDocRef)
+    if (subSnap.exists()) {
+      return subSnap.data()
+    }
+
     return null
   } catch (err) {
     console.warn('Firestore cloud fetch notice:', err.message)

@@ -37,7 +37,13 @@ import {
   X,
   UserCheck,
   Loader2,
-  Receipt
+  Receipt,
+  Cloud,
+  CloudOff,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  RefreshCw
 } from 'lucide-react'
 import AuthGate from './components/AuthGate'
 import HoldingsTab from './components/HoldingsTab'
@@ -98,6 +104,71 @@ export default function App() {
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Sync state: 'synced' | 'syncing' | 'offline' | 'error'
+  const [syncState, setSyncState] = useState(() => (typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'synced'))
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState([])
+
+  function showToast(message, type = 'success') {
+    const id = Date.now() + Math.random()
+    setToasts((curr) => [...curr, { id, message, type }])
+    setTimeout(() => {
+      setToasts((curr) => curr.filter((t) => t.id !== id))
+    }, 3500)
+  }
+
+  function dismissToast(id) {
+    setToasts((curr) => curr.filter((t) => t.id !== id))
+  }
+
+  // Network online/offline event listeners
+  useEffect(() => {
+    function handleOnline() {
+      setSyncState('syncing')
+      if (currentUser) {
+        savePortfolioToFirestore(currentUser.uid, data)
+          .then(() => {
+            setSyncState('synced')
+            showToast('Connection restored. Cloud synchronized.', 'success')
+          })
+          .catch(() => setSyncState('error'))
+      } else {
+        setSyncState('synced')
+      }
+    }
+
+    function handleOffline() {
+      setSyncState('offline')
+      showToast('Working offline. Local changes saved to browser cache.', 'info')
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [currentUser, data])
+
+  async function triggerManualSync() {
+    if (!currentUser) return
+    if (!navigator.onLine) {
+      setSyncState('offline')
+      showToast('You are currently offline. Changes are saved locally.', 'error')
+      return
+    }
+    setSyncState('syncing')
+    try {
+      await savePortfolioToFirestore(currentUser.uid, data)
+      setSyncState('synced')
+      showToast('Cloud Firestore synchronized successfully.', 'success')
+    } catch {
+      setSyncState('error')
+      showToast('Cloud synchronization notice: Retrying shortly.', 'error')
+    }
+  }
+
   // Theme effect
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -134,6 +205,7 @@ export default function App() {
 
         // 3. Asynchronously sync with Firestore cloud storage
         try {
+          setSyncState('syncing')
           const cloudData = await loadPortfolioFromFirestore(user.uid)
           const hasCloudContent = cloudData && (
             (cloudData.holdings || []).length > 0 ||
@@ -154,11 +226,14 @@ export default function App() {
           } else if (hasLocalContent) {
             savePortfolioToFirestore(user.uid, localPortfolio)
           }
+          setSyncState('synced')
         } catch {
           // Fallback to local cache if network is offline
+          setSyncState(navigator.onLine ? 'error' : 'offline')
         }
       } else {
         setData(loadUserData(null))
+        setSyncState('synced')
       }
       setAuthLoading(false)
     })
@@ -170,7 +245,14 @@ export default function App() {
   useEffect(() => {
     if (!authLoading && currentUser) {
       saveUserData(currentUser.uid, data)
-      savePortfolioToFirestore(currentUser.uid, data)
+      if (navigator.onLine) {
+        setSyncState('syncing')
+        savePortfolioToFirestore(currentUser.uid, data)
+          .then(() => setSyncState('synced'))
+          .catch(() => setSyncState('error'))
+      } else {
+        setSyncState('offline')
+      }
     }
   }, [data, currentUser, authLoading])
 
@@ -193,6 +275,7 @@ export default function App() {
       holdings: [holding, ...curr.holdings],
       activities: [activity, ...(curr.activities || [])].slice(0, 20)
     }))
+    showToast(`Added ${holding.name} to portfolio`)
   }
 
   function handleUpdateHoldingPrice(id, newPrice) {
@@ -208,6 +291,7 @@ export default function App() {
         activities: activity ? [activity, ...(curr.activities || [])].slice(0, 20) : curr.activities
       }
     })
+    showToast('Market price updated')
   }
 
   function handleUpdateHolding(updated) {
@@ -219,9 +303,11 @@ export default function App() {
         ...(curr.activities || [])
       ].slice(0, 20)
     }))
+    showToast(`Updated position for ${updated.name}`)
   }
 
   function handleDeleteHolding(id) {
+    const holdingName = data.holdings.find((h) => h.id === id)?.name || 'Position'
     setData((curr) => {
       const item = curr.holdings.find((h) => h.id === id)
       const activity = item
@@ -234,6 +320,7 @@ export default function App() {
         activities: activity ? [activity, ...(curr.activities || [])].slice(0, 20) : curr.activities
       }
     })
+    showToast(`Deleted ${holdingName} from portfolio`, 'info')
   }
 
   function handleAddSavings(saving) {
@@ -243,6 +330,7 @@ export default function App() {
       savings: [saving, ...curr.savings],
       activities: [activity, ...(curr.activities || [])].slice(0, 20)
     }))
+    showToast(`Registered ${saving.name}`)
   }
 
   function handleUpdateSaving(updated) {
@@ -254,9 +342,11 @@ export default function App() {
         ...(curr.activities || [])
       ].slice(0, 20)
     }))
+    showToast(`Updated ${updated.name}`)
   }
 
   function handleDeleteSavings(id) {
+    const savingName = data.savings.find((s) => s.id === id)?.name || 'Account'
     setData((curr) => {
       const item = curr.savings.find((s) => s.id === id)
       const activity = item
@@ -269,6 +359,7 @@ export default function App() {
         activities: activity ? [activity, ...(curr.activities || [])].slice(0, 20) : curr.activities
       }
     })
+    showToast(`Removed ${savingName}`, 'info')
   }
 
   // Expense Handlers
@@ -286,6 +377,7 @@ export default function App() {
       expenses: [expense, ...(curr.expenses || [])],
       activities: [activity, ...(curr.activities || [])].slice(0, 20)
     }))
+    showToast(`Logged ${expense.category} expense of ${fmtINR(expense.amount)}`)
   }
 
   function handleUpdateExpense(updated) {
@@ -293,6 +385,7 @@ export default function App() {
       ...curr,
       expenses: (curr.expenses || []).map((e) => (e.id === updated.id ? updated : e))
     }))
+    showToast(`Updated expense record`)
   }
 
   function handleDeleteExpense(id) {
@@ -300,6 +393,7 @@ export default function App() {
       ...curr,
       expenses: (curr.expenses || []).filter((e) => e.id !== id)
     }))
+    showToast('Expense record deleted', 'info')
   }
 
   // Income Handlers
@@ -317,6 +411,7 @@ export default function App() {
       income: [inc, ...(curr.income || [])],
       activities: [activity, ...(curr.activities || [])].slice(0, 20)
     }))
+    showToast(`Logged ${inc.category} income of ${fmtINR(inc.amount)}`)
   }
 
   function handleUpdateIncome(updated) {
@@ -324,6 +419,7 @@ export default function App() {
       ...curr,
       income: (curr.income || []).map((i) => (i.id === updated.id ? updated : i))
     }))
+    showToast('Income record updated')
   }
 
   function handleDeleteIncome(id) {
@@ -331,6 +427,7 @@ export default function App() {
       ...curr,
       income: (curr.income || []).filter((i) => i.id !== id)
     }))
+    showToast('Income record deleted', 'info')
   }
 
   function handleTakeSnapshot() {
@@ -356,6 +453,7 @@ export default function App() {
         ].slice(0, 20)
       }
     })
+    showToast('Daily net worth snapshot recorded')
   }
 
   function handleUpdateProfile(newProfile) {
@@ -369,6 +467,7 @@ export default function App() {
         profile: updatedProfile
       }
     })
+    showToast('Profile information updated')
   }
 
   async function handleLogout() {
@@ -541,6 +640,39 @@ export default function App() {
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Live Cloud Sync Status Badge */}
+            <button
+              type="button"
+              onClick={triggerManualSync}
+              className="flex items-center text-xs font-semibold transition-all duration-150 rounded-full focus:outline-none"
+              title="Click to force cloud synchronization"
+            >
+              {syncState === 'synced' && (
+                <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-2.5 py-1.5 rounded-full transition-colors">
+                  <Cloud size={13} className="text-emerald-500" />
+                  <span className="hidden sm:inline">Cloud Synced</span>
+                </span>
+              )}
+              {syncState === 'syncing' && (
+                <span className="inline-flex items-center gap-1.5 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-2.5 py-1.5 rounded-full">
+                  <Loader2 size={13} className="animate-spin text-orange-500" />
+                  <span className="hidden sm:inline">Syncing...</span>
+                </span>
+              )}
+              {syncState === 'offline' && (
+                <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 rounded-full">
+                  <CloudOff size={13} className="text-amber-500" />
+                  <span className="hidden sm:inline">Offline</span>
+                </span>
+              )}
+              {syncState === 'error' && (
+                <span className="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 px-2.5 py-1.5 rounded-full transition-colors">
+                  <AlertCircle size={13} className="text-red-500" />
+                  <span className="hidden sm:inline">Sync Failed</span>
+                </span>
+              )}
+            </button>
+
             {/* Quick Add Button with dropdown */}
             <div className="relative">
               <button
@@ -729,6 +861,48 @@ export default function App() {
         onClose={() => setIsSavingsModalOpen(false)}
         onSave={handleAddSavings}
       />
+
+      {/* Fixed Toast Notifications Container */}
+      {toasts.length > 0 && (
+        <aside
+          aria-label="Notifications"
+          className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
+        >
+          {toasts.map((toast) => {
+            const isSuccess = toast.type === 'success'
+            const isError = toast.type === 'error'
+            const isInfo = toast.type === 'info'
+
+            return (
+              <div
+                key={toast.id}
+                role="status"
+                className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl shadow-xl border backdrop-blur-md transition-all duration-200 ${
+                  isSuccess
+                    ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200'
+                    : isError
+                    ? 'bg-rose-950/90 border-rose-500/30 text-rose-200'
+                    : 'bg-gray-900/90 border-gray-700/60 text-gray-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 text-xs font-medium leading-relaxed">
+                  {isSuccess && <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />}
+                  {isError && <AlertCircle size={16} className="text-rose-400 shrink-0" />}
+                  {isInfo && <Info size={16} className="text-blue-400 shrink-0" />}
+                  <span>{toast.message}</span>
+                </div>
+                <button
+                  onClick={() => dismissToast(toast.id)}
+                  aria-label="Dismiss notification"
+                  className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )
+          })}
+        </aside>
+      )}
     </div>
   )
 }
@@ -823,7 +997,7 @@ function DashboardOverview({
             {todayFormatted}
           </p>
           <h2 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mt-0.5">
-            {greeting}, {userName} <span className="inline-block animate-pulse">👋</span>
+            {greeting}, {userName}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Here is your live personal wealth and asset overview.
@@ -1066,49 +1240,69 @@ function DashboardOverview({
             </div>
           </div>
 
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                <defs>
-                  <linearGradient id="orangeTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#f97316" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11, fill: '#888' }}
-                />
-                <YAxis
-                  tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fill: '#888' }}
-                  domain={['auto', 'auto']}
-                />
-                <Tooltip
-                  formatter={(value) => [fmtINR(value), 'Portfolio Value']}
-                  contentStyle={{
-                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                    borderRadius: '12px',
-                    border: 'none',
-                    color: '#fff',
-                    fontSize: '12px'
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#f97316"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#orangeTrend)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {holdings.length === 0 && savings.length === 0 ? (
+            <div className="h-64 w-full flex flex-col items-center justify-center text-center p-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 mb-3">
+                <TrendingUp size={24} />
+              </div>
+              <h4 className="font-heading font-bold text-sm text-gray-800 dark:text-gray-200">
+                No performance history yet
+              </h4>
+              <p className="text-xs text-gray-400 mt-1 max-w-sm">
+                Add your first investment position or deposit to start tracking portfolio growth.
+              </p>
+              <button
+                onClick={onAddHolding}
+                className="btn-primary text-xs py-2 px-4 mt-4 font-bold"
+              >
+                + Add Investment
+              </button>
+            </div>
+          ) : (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                  <defs>
+                    <linearGradient id="orangeTrend" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="label"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#888' }}
+                  />
+                  <YAxis
+                    tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    domain={['auto', 'auto']}
+                  />
+                  <Tooltip
+                    formatter={(value) => [fmtINR(value), 'Portfolio Value']}
+                    contentStyle={{
+                      backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                      borderRadius: '12px',
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#f97316"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#orangeTrend)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </section>
 
         {/* Asset Allocation Donut Card */}
@@ -1129,54 +1323,67 @@ function DashboardOverview({
             </button>
           </div>
 
-          <div className="flex items-center justify-center my-auto py-2">
-            <div className="relative h-48 w-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={allocation.length ? allocation : [{ name: 'Empty', value: 1, color: '#e5e7eb' }]}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={55}
-                    outerRadius={75}
-                    paddingAngle={3}
-                    stroke="none"
-                  >
-                    {(allocation.length ? allocation : [{ color: '#e5e7eb' }]).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total</span>
-                <span className="font-heading font-extrabold text-sm text-gray-900 dark:text-white">
-                  {fmtINR(summary.netWorth, { compact: true })}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-            {allocation.map((item) => {
-              const pct = summary.netWorth > 0 ? (item.value / summary.netWorth) * 100 : 0
-              return (
-                <div key={item.name} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-gray-600 dark:text-gray-300 font-medium">{item.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <strong className="font-heading text-gray-900 dark:text-white">{fmtINR(item.value)}</strong>
-                    <span className="text-gray-400 text-[11px]">({pct.toFixed(0)}%)</span>
+          {allocation.length > 0 ? (
+            <>
+              <div className="flex items-center justify-center my-auto py-2">
+                <div className="relative h-48 w-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={allocation}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={55}
+                        outerRadius={75}
+                        paddingAngle={3}
+                        stroke="none"
+                      >
+                        {allocation.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total</span>
+                    <span className="font-heading font-extrabold text-sm text-gray-900 dark:text-white">
+                      {fmtINR(summary.netWorth, { compact: true })}
+                    </span>
                   </div>
                 </div>
-              )
-            })}
-            {allocation.length === 0 && (
-              <p className="text-center text-xs text-gray-400 py-2">Add assets to see allocation</p>
-            )}
-          </div>
+              </div>
+
+              <div className="mt-4 space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+                {allocation.map((item) => {
+                  const pct = summary.netWorth > 0 ? (item.value / summary.netWorth) * 100 : 0
+                  return (
+                    <div key={item.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-gray-600 dark:text-gray-300 font-medium">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <strong className="font-heading text-gray-900 dark:text-white">{fmtINR(item.value)}</strong>
+                        <span className="text-gray-400 text-[11px]">({pct.toFixed(0)}%)</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="my-auto py-12 flex flex-col items-center justify-center text-center p-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 mb-3">
+                <PieIcon size={24} />
+              </div>
+              <h4 className="font-heading font-bold text-sm text-gray-800 dark:text-gray-200">
+                No portfolio allocation yet
+              </h4>
+              <p className="text-xs text-gray-400 mt-1 max-w-xs">
+                Add shares, mutual funds, or deposits to view your asset diversification.
+              </p>
+            </div>
+          )}
         </section>
       </div>
 

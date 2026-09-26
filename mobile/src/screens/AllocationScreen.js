@@ -44,10 +44,10 @@ export default function AllocationScreen({ portfolio }) {
   const cashPct = ((cashTotal / total) * 100).toFixed(1)
 
   const classes = [
-    { name: 'Direct Equity / Stocks', amount: equityTotal, pct: eqPct, color: '#f97316', icon: '📈' },
-    { name: 'Mutual Funds & ETFs', amount: mfTotal, pct: mfPct, color: '#3b82f6', icon: '📊' },
-    { name: 'Fixed Deposits (Debt)', amount: fdsTotal, pct: fdPct, color: '#10b981', icon: '🔒' },
-    { name: 'Liquid Savings & Cash', amount: cashTotal, pct: cashPct, color: '#eab308', icon: '💰' }
+    { name: 'Direct Equity / Stocks', amount: equityTotal, pct: eqPct, color: '#f97316' },
+    { name: 'Mutual Funds & ETFs', amount: mfTotal, pct: mfPct, color: '#3b82f6' },
+    { name: 'Fixed Deposits (Debt)', amount: fdsTotal, pct: fdPct, color: '#10b981' },
+    { name: 'Liquid Savings & Cash', amount: cashTotal, pct: cashPct, color: '#eab308' }
   ]
 
   return (

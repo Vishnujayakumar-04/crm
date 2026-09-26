@@ -21,6 +21,14 @@ import SavingsScreen from './src/screens/SavingsScreen'
 import AllocationScreen from './src/screens/AllocationScreen'
 import ExpensesScreen from './src/screens/ExpensesScreen'
 import SettingsScreen from './src/screens/SettingsScreen'
+import {
+  LayoutDashboard,
+  TrendingUp,
+  Landmark,
+  PieChart,
+  Receipt,
+  User as UserIcon
+} from 'lucide-react-native'
 
 const DEFAULT_PORTFOLIO = {
   profile: { name: 'Investor' },
@@ -233,6 +241,16 @@ export default function App() {
     }))
   }
 
+  function handleUpdateProfile(profileData) {
+    updatePortfolio((curr) => ({
+      ...curr,
+      profile: {
+        ...(curr.profile || {}),
+        ...profileData
+      }
+    }))
+  }
+
   if (authLoading) {
     return (
       <View style={styles.splashContainer}>
@@ -300,6 +318,7 @@ export default function App() {
           <SettingsScreen
             user={user}
             portfolio={portfolio}
+            onUpdateProfile={handleUpdateProfile}
             onForceSync={handleRefresh}
             onLogout={() => setUser(null)}
           />
@@ -309,23 +328,28 @@ export default function App() {
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomBar}>
         {[
-          { id: 'Dashboard', label: 'Overview', icon: '🏠' },
-          { id: 'Holdings', label: 'Holdings', icon: '📈' },
-          { id: 'Savings', label: 'Savings', icon: '🏦' },
-          { id: 'Allocation', label: 'Allocation', icon: '🥧' },
-          { id: 'Expenses', label: 'Expenses', icon: '💳' },
-          { id: 'Profile', label: 'Profile', icon: '👤' }
+          { id: 'Dashboard', label: 'Overview', icon: LayoutDashboard },
+          { id: 'Holdings', label: 'Holdings', icon: TrendingUp },
+          { id: 'Savings', label: 'Savings', icon: Landmark },
+          { id: 'Allocation', label: 'Allocation', icon: PieChart },
+          { id: 'Expenses', label: 'Expenses', icon: Receipt },
+          { id: 'Profile', label: 'Profile', icon: UserIcon }
         ].map((tab) => {
+          const Icon = tab.icon
           const isActive = currentTab === tab.id || (tab.id === 'Profile' && currentTab === 'Settings')
           return (
             <TouchableOpacity
               key={tab.id}
               style={styles.tabItem}
               onPress={() => setCurrentTab(tab.id)}
+              activeOpacity={0.7}
             >
-              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
-                {tab.icon}
-              </Text>
+              <Icon
+                size={19}
+                color={isActive ? '#f97316' : '#64748b'}
+                strokeWidth={isActive ? 2.5 : 1.8}
+                style={{ marginBottom: 3 }}
+              />
               <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                 {tab.label}
               </Text>
