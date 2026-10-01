@@ -21,7 +21,6 @@ export const defaultExpenseCategories = [
   'EMI / Loans',
   'Other'
 ]
-
 export const defaultIncomeCategories = [
   'Salary',
   'Freelance',
